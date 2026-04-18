@@ -1,0 +1,95 @@
+name: CI-CD-UAT
+
+on:
+  # Trigger the workflow on a new release
+  push:
+    branches:
+      - development
+  pull_request:
+    branches:
+      - development
+
+# Config for dockerize and deploy jobs
+# Change IMAGE_NAME and IMAGE_TAG to your own
+# Set HOST, USERNAME, PASSWORD, PORT to your own
+env:
+  IMAGE_NAME: ${{ secrets.IMAGE_NAME }}
+  IMAGE_TAG: ${{ github.event.release.tag_name || 'latest' }}
+  HOST: ${{ secrets.UAT_HOST }}
+  USERNAME: ${{ secrets.UAT_USER }}
+  PASSWORD: ${{ secrets.UAT_PW }}
+  DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
+  DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
+
+jobs:
+  dockerize:
+    runs-on: self-hosted
+    environment: UAT
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
+
+      - name: Cache Docker layers
+        uses: actions/cache@v3
+        with:
+          path: /tmp/.buildx-cache
+          key: ${{ runner.os }}-buildx-${{ github.sha }}
+          restore-keys: |
+            ${{ runner.os }}-buildx-
+
+      - name: Login to DockerHub
+        uses: docker/login-action@v2
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+
+      - name: Build and push
+        uses: docker/build-push-action@v4
+        with:
+          context: .
+          push: true
+          platforms: linux/amd64
+          tags: |
+            ${{ env.IMAGE_NAME }}:${{ env.IMAGE_TAG }}
+            ${{ env.IMAGE_NAME }}:latest
+
+          cache-from: type=local,src=/tmp/.buildx-cache
+          cache-to: type=local,dest=/tmp/.buildx-cache-new,mode=max
+
+      - # Temp fix
+        # https://github.com/docker/build-push-action/issues/252
+        # https://github.com/moby/buildkit/issues/1896
+        name: Move cache
+        run: |
+          rm -rf /tmp/.buildx-cache
+          mv /tmp/.buildx-cache-new /tmp/.buildx-cache
+
+      # - name: Copy docker-compose.yml, configs and secrets
+      #   uses: appleboy/scp-action@v0.1.4
+      #   with:
+      #     host: ${{ secrets.UAT_HOST }}
+      #     username: ${{ secrets.UAT_USER }}
+      #     password: ${{ secrets.UAT_PW }}
+      #     source: "docker-compose.yml"
+      #     target: "/home/${{ env.USERNAME }}/${{ env.IMAGE_NAME }}"
+
+  # deploy:
+  #   runs-on: ubuntu-latest
+  #   environment: UAT
+  #   needs: dockerize
+
+  #   steps:
+  #     - name: SSH Remote Commands
+  #       uses: appleboy/ssh-action@v0.1.10
+  #       with:
+  #         host: ${{ env.HOST }}
+  #         username: ${{ env.USERNAME }}
+  #         password: ${{ env.PASSWORD }}
+  #         port: ${{ env.PORT }}
+  #         script: |
+  #           cd /home/${{ env.USERNAME }}/${{ env.IMAGE_NAME }}
+  #           docker compose pull
+  #           docker compose up -d
