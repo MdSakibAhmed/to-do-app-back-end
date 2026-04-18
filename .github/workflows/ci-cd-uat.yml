@@ -52,7 +52,7 @@ jobs:
           context: .
           push: true
           platforms: linux/amd64
-          tags: ${{ env.IMAGE_NAME }}:latest
+          tags: salmansakib/to-do-app-back-end-uat:latest
 
           cache-from: type=local,src=/tmp/.buildx-cache
           cache-to: type=local,dest=/tmp/.buildx-cache-new,mode=max
