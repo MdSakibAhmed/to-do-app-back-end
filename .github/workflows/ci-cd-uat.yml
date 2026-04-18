@@ -14,7 +14,7 @@ on:
 # Set HOST, USERNAME, PASSWORD, PORT to your own
 env:
   IMAGE_NAME: ${{ secrets.IMAGE_NAME }}
-  IMAGE_TAG: ${{ github.event.release.tag_name || 'latest' }}
+  IMAGE_TAG: ${{ secrets.IMAGE_TAG || 'latest' }}
   HOST: ${{ secrets.UAT_HOST }}
   USERNAME: ${{ secrets.UAT_USER }}
   PASSWORD: ${{ secrets.UAT_PW }}
