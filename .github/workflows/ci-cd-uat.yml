@@ -15,9 +15,9 @@ on:
 env:
   IMAGE_NAME: ${{ secrets.IMAGE_NAME }}
   IMAGE_TAG: ${{ secrets.IMAGE_TAG || 'latest' }}
-  HOST: ${{ secrets.UAT_HOST }}
-  USERNAME: ${{ secrets.UAT_USER }}
-  PASSWORD: ${{ secrets.UAT_PW }}
+  HOST: ${{ secrets.HOST }}
+  USERNAME: ${{ secrets.USERNAME }}
+  PASSWORD: ${{ secrets.PASSWORD }}
   DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
   DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
 
@@ -74,20 +74,19 @@ jobs:
       #     source: "docker-compose.yml"
       #     target: "/home/${{ env.USERNAME }}/${{ env.IMAGE_NAME }}"
 
-  # deploy:
-  #   runs-on: ubuntu-latest
-  #   environment: UAT
-  #   needs: dockerize
+  deploy:
+    runs-on: self-hosted
+    environment: UAT
+    needs: dockerize
 
-  #   steps:
-  #     - name: SSH Remote Commands
-  #       uses: appleboy/ssh-action@v0.1.10
-  #       with:
-  #         host: ${{ env.HOST }}
-  #         username: ${{ env.USERNAME }}
-  #         password: ${{ env.PASSWORD }}
-  #         port: ${{ env.PORT }}
-  #         script: |
-  #           cd /home/${{ env.USERNAME }}/${{ env.IMAGE_NAME }}
-  #           docker compose pull
-  #           docker compose up -d
+    steps:
+      - name: SSH Remote Commands
+        uses: appleboy/ssh-action@v0.1.10
+        with:
+          host: ${{ env.HOST }}
+          username: ${{ env.USERNAME }}
+          password: ${{ env.PASSWORD }}
+          script: |
+            cd /home/salman/deployment/to-do-app-uat
+            docker compose pull
+            docker compose up -d

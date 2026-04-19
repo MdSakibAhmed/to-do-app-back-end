@@ -6,6 +6,7 @@ import todosRouter from './routes/todos.js'
 import { notFound, errorHandler } from './middleware/errorHandler.js'
 
 const app = express()
+
 const PORT = process.env.PORT || 3001
 // ── Middleware ───────────────────────────────────────────────────────────────
 app.use(cors({
